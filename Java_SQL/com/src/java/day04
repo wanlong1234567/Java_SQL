@@ -1,0 +1,279 @@
+查看ALLEN的上司是谁?
+SELECT e.ename,m.ename
+FROM emp e JOIN emp m
+ON e.mgr = m.empno
+WHERE e.ename='ALLEN'
+
+查看SMITH上司在哪个城市工作?
+SELECT e.ename,m.ename,d.loc
+FROM emp e JOIN emp m
+ON e.mgr=m.empno
+JOIN dept d
+ON m.deptno = d.deptno
+WHERE e.ename='SMITH'
+
+查看平均工资高于2000的那些部门名字以及所在城市?
+SELECT AVG(e.sal),d.dname,d.loc
+FROM emp e JOIN dept d
+ON e.deptno=d.deptno
+GROUP BY d.dname,d.loc
+HAVING AVG(e.sal)>2000
+
+在NEW YORK工作的员工有多少人?
+SELECT COUNT(1)
+FROM emp e JOIN dept d
+ON e.deptno=d.deptno
+WHERE d.loc='NEW YORK'
+
+在DALLAS工作的员工的平均工资是多少?
+SELECT AVG(e.sal)
+FROM emp e JOIN dept d
+ON e.deptno=d.deptno
+WHERE d.loc='DALLAS'
+
+
+查看谁的工资高于CLARK?
+SELECT ename,sal
+FROM emp
+WHERE sal>(SELECT sal FROM emp
+           WHERE ename='CLARK')
+
+
+DDL中使用子查询，可以将一个子查询的结果集
+当做一张表快速创建出来。
+CREATE TABLE employee
+AS
+SELECT e.empno,e.ename,e.sal,e.job,
+       e.deptno,d.dname,d.loc
+FROM emp e LEFT OUTER JOIN dept d
+ON e.deptno=d.deptno
+
+
+
+子查询根据查询结果分为:
+单行单列子查询，多行单列子查询，多行多列子查询
+
+其中单列子查询常用在过滤条件中，而多列子查询常当做表使用。
+
+对于多行单列子查询，在进行过滤判断是要配合IN,ANY,ALL使用
+
+SELECT ename,deptno
+FROM emp
+WHERE deptno IN(SELECT deptno FROM emp
+                WHERE job='SALESMAN')
+
+查看比职位是CLERK和SALESMAN工资都高的员工?
+SELECT ename,sal
+FROM emp
+WHERE sal>ALL(SELECT sal FROM emp
+              WHERE job IN ('CLERK','SALESMAN'))
+
+SELECT MIN(sal),deptno
+FROM emp
+GROUP BY deptno
+
+
+SELECT e.ename,e.sal,e.deptno
+FROM emp e,(SELECT AVG(sal) avg_sal,deptno
+            FROM emp
+            GROUP BY deptno) t
+WHERE e.deptno=t.deptno
+AND e.sal>t.avg_sal
+
+查看每个部门最高工资是谁?
+列出该员工名字，职位，工资，部门号
+SELECT e.ename,e.job,e.sal,e.deptno
+FROM emp e,(SELECT MAX(sal) max_sal,deptno
+            FROM emp
+            GROUP BY deptno) t
+WHERE e.deptno=t.deptno
+AND e.sal=t.max_sal
+
+
+分页查询
+分页查询就是将一个查询语查询的数据分批分段查询出来。
+这样做的好处在于，当一个查询语句可以查询的结果集非常大时，
+有效的减少网络传输的数据量，提高响应速度，降低系统开销。
+
+
+ROWNUM
+ROWNUM是一个伪列，实际不存在于任何表中，但是每张表都
+可以查询该字段，该字段的值为查询的结果集中每条记录的行号。
+该字段的值是伴随查询的过程中动态生成的，只要可以从表中查询
+出一条记录，那么该字段的值就是该记录在当前结果集中的行号，
+行号从1开始递增。
+
+查看第6-10行的记录?
+SELECT ROWNUN,ename,sal,job,deptno
+FROM emp
+WHERE ROWNUM >1
+上面的查询得不到任何结果
+在使用ROWNUM字段为结果集编行号的过程中，不要使用ROWNUM做>1以上数字的判断为过滤条件，否则将得不到
+任何结果。
+
+SELECT *
+FROM (SELECT ROWNUM rn,ename,sal,job,deptno
+      FROM emp)
+WHERE rn BETWEEN 6 AND 10
+
+
+查看公司工资的排名6-10:
+SELECT *
+FROM(SELECT ROWNUM rn,t.*
+     FROM(SELECT ename,sal,job,deptno
+          FROM emp
+          ORDER BY sal DESC) t)
+WHERE rn BETWEEN 6 AND 10
+
+SELECT *
+FROM(SELECT ROWNUM rn,t.*
+           FROM(SELECT ename,sal,job,deptno
+                      FROM emp
+                      ORDER BY sal DESC) t
+           WHERE ROWNUM<=10
+           )
+WHERE rn >=6
+
+
+SELECT ename, job, sal,
+     DECODE(job,
+           'MANAGER', sal * 1.2,
+           'ANALYST', sal * 1.1,
+           'SALESMAN', sal * 1.05,
+           sal
+     ) bonus
+FROM emp;
+
+SELECT COUNT(1),job
+FROM emp
+GROUP BY job
+
+
+SELECT COUNT(1),
+ DECODE(job,
+        'MANAGER','VIP',
+        'ANALYST','VIP',
+        'OTHER')
+FROM emp
+GROUP BY DECODE(job,
+        'MANAGER','VIP',
+        'ANALYST','VIP',
+        'OTHER')
+
+
+排序函数
+排序函数可以将结果集按照指定的字段分组，组内再按照指定的
+字段排序，然后生成组内编号。
+
+ROW_NUMBER:生成组内连续且唯一的数字
+查看每个部门的工资排名:
+SELECT
+ ename,deptno,sal,
+ ROW_NUMBER() OVER(
+   PARTITION BY deptno
+   ORDER BY sal DESC
+ ) rank
+FROM emp
+
+RANK:生成组内不连续也不唯一的数字
+查看每个部门的工资排名:
+SELECT
+ ename,deptno,sal,
+ RANK() OVER(
+   PARTITION BY deptno
+   ORDER BY sal DESC
+ ) rank
+FROM emp
+
+
+DENSE_RANK:生成组内连续但不唯一的数字
+查看每个部门的工资排名:
+SELECT
+ ename,deptno,sal,
+ DENSE_RANK() OVER(
+   PARTITION BY deptno
+   ORDER BY sal DESC
+ ) rank
+FROM emp
+
+
+SELECT year_id,month_id,day_id,sales_value
+FROM sales_tab
+ORDER BY year_id,month_id,day_id
+
+
+
+高级分组函数
+
+查看每天营业额?
+SELECT year_id,month_id,day_id,SUM(sales_value)
+FROM sales_tab
+GROUP BY year_id,month_id,day_id
+ORDER BY year_id,month_id,day_id
+
+查看每月营业额?
+SELECT year_id,month_id,SUM(sales_value)
+FROM sales_tab
+GROUP BY year_id,month_id
+ORDER BY year_id,month_id
+
+查看每年营业额?
+SELECT year_id,SUM(sales_value)
+FROM sales_tab
+GROUP BY year_id
+ORDER BY year_id
+
+总共的营业额？
+SELECT SUM(sales_value)
+FROM sales_tab
+
+查看每天，每月，每年以及总共的营业额?
+SELECT year_id,month_id,day_id,SUM(sales_value)
+FROM sales_tab
+GROUP BY year_id,month_id,day_id
+UNION ALL
+SELECT year_id,month_id,NULL,SUM(sales_value)
+FROM sales_tab
+GROUP BY year_id,month_id
+UNION ALL
+SELECT year_id,NULL,NULL,SUM(sales_value)
+FROM sales_tab
+GROUP BY year_id
+UNION ALL
+SELECT NULL,NULL,NULL,SUM(sales_value)
+FROM sales_tab
+
+1:ROLLUP函数
+GROUP BY ROLLUP(a,b,c)
+等价于:
+GROUP BY a,b,c
+UNION ALL
+GROUP BY a,b
+UNION ALL
+GROUP BY a
+UNION ALL
+全表
+
+查看每天，每月，每年以及总共的营业额?
+SELECT year_id,month_id,day_id,SUM(sales_value)
+FROM sales_tab
+GROUP BY ROLLUP(year_id,month_id,day_id)
+ORDER BY year_id,month_id,day_id
+
+
+2:CUBE:参数的每种组合都进行一次分组
+分组次数为:2的参数个数次方
+SELECT year_id,month_id,day_id,SUM(sales_value)
+FROM sales_tab
+GROUP BY GROUPING SETS(
+  (year_id,month_id,day_id),(year_id,month_id)
+)
+ORDER BY year_id,month_id,day_id
+
+
+
+
+
+
+
+

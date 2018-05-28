@@ -1,0 +1,223 @@
+字段的别名
+SELECT子句中查询的内容若是函数或者表达式，那么
+在结果集中对应的该字段的名字就是这个函数或表达式，
+可读性会变得比较差，为此可以为这样的字段添加别名。
+这样在结果集中该字段的名字就是这个字段的别名。
+
+别名不区分大小写，若希望区分大小写或者含有空格，那么
+需要使用双引号将别名括起来。
+SELECT ename name,sal*12 "salary"
+FROM emp
+
+AND,OR可以连接多个条件，但是需要注意
+的是AND的优先级是高于OR的。所以可以通过
+括号提高OR的优先级。
+SELECT ename,job,sal
+FROM emp
+WHERE sal>1000
+AND (job='SALESMAN'
+OR job='CLERK')
+
+
+IN(LIST)与NOT IN(LIST)
+判断在列表中或不在列表中。
+IN,NOT IN常用在子查询中。
+
+SELECT ename, job FROM emp
+WHERE job IN ('MANAGER', 'CLERK');
+
+SELECT ename, job FROM emp
+WHERE deptno NOT IN (10, 20);
+
+
+BETWEEN...AND...
+判断在一个区间范围内
+
+SELECT ename,sal,job
+FROM emp
+WHERE sal BETWEEN 1500 AND 3000
+
+DISTINCT关键字
+DISTINCT可以对结果集中指定字段的重复记录去除
+SELECT DISTINCT job FROM emp
+
+DISTINCT对多个字段去重，去重不再保证每个字段
+一定没有重复值，去重的原则是这些字段值的组合
+没有重复记录。
+SELECT DISTINCT job,deptno FROM emp
+
+
+ORDER BY子句
+ORDER BY子句是对结果集按照指定的字段的值进行
+升序或者降序排列。
+ORDER BY 支持ASC,DESC
+ASC为升序，从小到大，不写默认就是升序
+DESC为降序。
+需要注意，ORDER BY只能定义在DQL的最后一个子句上。
+
+
+SELECT ename,job,sal
+FROM emp
+ORDER BY sal DESC
+
+ORDER BY按照多个字段排序时，排序存在优先级
+首先将结果集按照第一个字段的排序方式进行排序，
+当第一个字段有重复值的时候，第一个字段值相同
+的记录之间再按照第二个字段的方式排序，依此类推。
+SELECT ename,deptno,sal
+FROM emp
+ORDER BY deptno DESC,sal DESC
+
+
+聚合函数，又称为:多行函数，分组函数
+聚合函数是用来对结果集进行统计的。
+其中有4个针对值的统计：MAX,MIN,AVG,SUM
+还有一个是针对记录数的统计:COUNT
+
+查看公司的最高工资?
+SELECT MAX(sal)FROM emp
+
+SELECT
+ MAX(sal),MIN(sal),SUM(sal),AVG(sal)
+FROM emp
+
+COUNT是统计指定字段不为NULL的记录共多少条?
+查看公司员工人数:
+SELECT COUNT(ename) FROM emp
+
+SELECT COUNT(*) FROM emp
+SELECT COUNT(1) FROM emp
+
+聚合函数忽略NULL值
+SELECT COUNT(comm) FROM emp
+SELECT SUM(comm),AVG(comm) FROM emp
+
+SELECT AVG(NVL(comm,0)) FROM emp
+
+分组
+GROUP BY子句可以将结果集按照指定的字段值一样的记录
+进行分组，配合聚合函数可以进行组内统计的工作。
+
+查看每个部门的平均工资?
+SELECT AVG(sal),deptno
+FROM emp
+GROUP BY deptno
+
+当SELECT中含有聚合函数时，凡不在聚合
+函数中的单独字段，都需要出现在GROUP BY
+子句中。
+
+GROUP BY按照多个字段分组的原则:这些字段值都一样的
+记录被划分为一组。
+
+查看同部门同职位的员工各多少人?
+SELECT COUNT(*),deptno,job
+FROM emp
+GROUP BY deptno,job
+
+
+查看每个部门的平均工资，前提是该部门的
+平均工资高于2000
+SELECT AVG(sal),deptno
+FROM emp
+WHERE AVG(sal)>2000
+GROUP BY deptno
+
+上述SQL会报错，WHERE中是不能使用聚合函数的
+WHERE不能使用聚合函数作为过滤条件，原因是过滤时机
+不对。
+WHERE是在查询表中数据的时候逐行进行过滤，将满足条件的记录
+形成结果集。
+而使用聚合函数的结果进行过滤的前提是分组统计，分组是建立在
+结果集上，而WHERE是用来形成结果集时的过滤。所以使用聚合
+函数过滤应当是在WHERE之后进行的。
+
+HAVING子句，HAVING子句可以使用聚合函数作为过滤条件。
+HAVING必须跟在GROUP BY子句后面(不定义GROUP BY不能
+单独定义HAVING)。
+HAVING是用来添加过滤条件以去除不满足条件的分组的。
+
+SELECT AVG(sal),deptno
+FROM emp
+GROUP BY deptno
+HAVING AVG(sal)>2000
+
+
+SELECT MAX(sal),deptno
+FROM emp
+GROUP BY deptno
+HAVING AVG(sal)>2000
+
+
+
+关联查询
+关联查询是指关联多张表联合查询记录，结果集中的字段可能来自
+多张表。
+关联查询的关键点在于连接条件，数据库是根据连接条件找到这些
+表中记录之间的对应关系，从而从这些记录中获取要查询的字段来
+构成结果集中的各个字段。
+
+当某个字段在查询中发现多个表都存在时，要求必须指明该字段
+所属哪张表。可以通过:表名.字段名  的形式标注，也可以为
+表添加别名，然后通过:表别名.字段名 的形式标注，这样可以
+降低编写SQL语句的复杂度，增加可读性。
+SELECT e.ename,e.deptno,d.dname
+FROM emp e,dept d
+WHERE e.deptno=d.deptno
+
+关联查询中要求所有过滤条件必须与关联条件同时成立。
+SELECT e.ename,e.deptno,d.dname,d.loc
+FROM emp e,dept d
+WHERE e.deptno=d.deptno
+AND d.loc='NEW YORK'
+
+N张表关联查询，至少要有N-1个连接条件。
+
+不指定连接条件或者连接条件无效时，会产生
+笛卡尔积，这通常是一个无意义的结果集，应当
+避免。
+SELECT e.ename,d.dname
+FROM emp e,dept d
+
+
+
+内连接，内连接也是关联查询的一种:
+SELECT e.ename,d.dname
+FROM emp e JOIN dept d
+ON e.deptno=d.deptno
+WHERE d.loc='NEW YORK'
+
+关联查询中，不满足连接条件的记录不会被查询出来。
+
+
+外连接
+外连接在进行关联查询时，除了可以将满足连接条件的记录
+查询出来之外，还可以将不满足连接条件的记录也查询出来。
+外连接分为:左外连接，右外连接，全外连接。
+左外连接:以JOIN左侧表作为驱动表，该表中的所有记录都会
+查询出来，当某条记录不满足连接条件时，结果集中该条记录
+中来自JOIN右侧表的字段的值全部为NULL。
+
+
+SELECT e.ename,e.sal,e.deptno,d.dname,d.loc
+FROM emp e FULL OUTER JOIN dept d
+ON e.deptno=d.deptno
+
+
+自连接
+当前表的一条记录可以对应当前表自己的多条记录。
+自连接的设计是为了解决数据属性相同，但是数据间又存在
+上下级关系的树状结构数据时使用
+
+查看每个员工以及其上司的名字?
+
+SELECT e.ename,m.ename
+FROM emp e,emp m
+WHERE e.mgr=m.empno
+
+
+
+
+
+
+

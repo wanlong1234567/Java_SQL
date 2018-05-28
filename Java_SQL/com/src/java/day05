@@ -1,0 +1,239 @@
+同部门同职位，同职位，以及所有员工的工资总和
+SELECT SUM(sal),job,deptno
+FROM emp
+GROUP BY ROLLUP(job,deptno)
+
+SELECT SUM(sal),job,deptno
+FROM emp
+GROUP BY CUBE(job,deptno)
+
+分别查看同部门同职位和同职位的员工的工资总和
+SELECT SUM(sal),job,deptno
+FROM emp
+GROUP BY GROUPING SETS((job,deptno),job)
+
+查看公司最高工资的员工的名字以及所在部门名称
+SELECT e.ename,e.sal,d.dname
+FROM emp e JOIN dept d
+ON e.deptno=d.deptno
+WHERE e.sal=(SELECT MAX(sal) FROM emp)
+
+
+查看每个部门的最高工资的员工名字
+SELECT e.ename,e.sal,e.deptno
+FROM emp e,(SELECT MAX(sal) max_sal,deptno
+            FROM emp
+            GROUP BY deptno) t
+WHERE e.deptno=t.deptno
+AND e.sal=t.max_sal
+
+查看有下属的员工信息?
+SELECT m.empno,m.ename
+FROM emp m
+WHERE EXISTS(
+  SELECT * FROM emp e
+  WHERE e.mgr = m.empno
+)
+
+视图
+视图是数据库对象之一
+视图在SQL语句中体现的角色与表一致，但它不是一张真实存在的表，
+只是对应了一个查询语句的结果集。
+
+创建视图:
+CREATE VIEW v_emp_10
+AS
+SELECT empno, ename, sal, deptno
+FROM emp
+WHERE deptno = 10;
+
+查看视图的结构
+DESC v_emp_10
+
+查看视图数据
+SELECT * FROM v_emp_10
+
+
+删除视图
+DROP VIEW v_emp_10
+
+当视图对应的子查询中含有函数或者表达式时，那么必须指定别名。
+CREATE VIEW v_emp_10
+AS
+SELECT empno id, ename name, sal*12 sal, deptno
+FROM emp
+WHERE deptno = 10
+
+视图根据对应的子查询分为:简单视图，复杂视图，连接视图
+简单视图:对应的子查询不含有函数，表达式，去重，分组。
+复杂视图:不是简单视图的都是复杂视图
+连接视图:对应的子查询有多表关联查询，连接视图算作复杂视图
+
+简单视图可以进行DML操作，但是复杂视图不允许进行DML操作。
+
+
+修改视图:视图的结构取决于对应的子查询，所以修改视图就是替换
+对应的子查询。
+CREATE OR REPLACE VIEW v_emp_10
+AS
+SELECT empno id, ename name, sal, deptno
+FROM emp
+WHERE deptno = 10
+
+
+对视图进行DML操作就是对视图数据来源的基础表进行的操作。
+虽然可以对简单视图进行DML操作，但是DML操作也不能违反基表的约束。
+INSERT INTO v_emp_10
+(id,name,sal,deptno)
+VALUES
+(1001,'JACK',2000,10)
+
+SELECT * FROM v_emp_10
+SELECT * FROM emp
+
+UPDATE v_emp_10
+SET sal=3000
+WHERE id=1001
+
+DELETE FROM v_emp_10
+WHERE id=1001
+
+是简单视图的不当DML操作会污染基础表数据:
+对简单视图进行DML操作后，视图对基础表做对应操作，但是影响的数据视图对其
+不可见时，就是对基表的数据污染。
+
+INSERT INTO v_emp_10
+(id,name,sal,deptno)
+VALUES
+(1001,'jack',2000,20)
+
+UPDATE v_emp_10
+SET deptno=20
+
+SELECT * FROM v_emp_10
+SELECT * FROM emp
+
+为视图添加检查选项可以避免对基础表产生的数据污染。
+检查选项要求对视图进行的DML操作后该记录视图对其可见，否则
+不允许操作。
+WITH CHECK OPTION
+
+CREATE OR REPLACE VIEW v_emp_10
+AS
+SELECT empno id, ename name, sal, deptno
+FROM emp
+WHERE deptno = 10
+WITH CHECK OPTION
+
+数据字典
+数据字典是一系列的表，这些表的数据由数据库自行维护，记录的
+是一些清单信息。方便随时查看。
+
+USER_OBJECTS:记录用户创建的所有数据库对象
+USER_VIEWS:记录用户创建的所有视图
+USER_TABLES:记录用户创建的所有表
+
+
+SELECT object_name
+FROM user_objects
+WHERE object_type='VIEW'
+
+
+创建一个含有各个部门工资情况的视图
+CREATE VIEW v_emp_dept_sal
+AS
+SELECT MAX(e.sal) max_sal,
+       MIN(e.sal) min_sal,
+       AVG(e.sal) avg_sal,
+       SUM(e.sal) sum_sal,
+       d.deptno,d.dname
+FROM emp e JOIN dept d
+ON e.deptno = d.deptno
+GROUP BY d.deptno,d.dname
+
+
+
+
+
+
+序列
+序列也是数据库对象之一，序列的作用是根据指定的规则生成一些列
+数字。序列通常是为某张表的主键字段提供值使用。
+主键:通常每张表都会有主键字段，该字段的值要求非空且唯一，使用
+该字段来确定表中的每一条记录使用。
+
+
+CREATE SEQUENCE seq_emp_id
+START WITH 1
+INCREMENT BY 1
+
+序列提供了两个伪列:
+NEXTVAL:获取序列的下一个数字，第一次获取时返回的是START
+WITH指定的数字，以后则是最后获取的数字加上步长得到的。
+NEXTVAL会导致序列发生步进，且不可回退。
+
+CURRVAL:获取序列当前数字，即:最后一次生成的数字。新创建的
+序列需要至少调用一次NEXTVAL以后才可以使用。CURRVAL不会
+发生序列的步进。
+
+
+SELECT seq_emp_id.CURRVAL
+FROM dual
+
+
+INSERT INTO emp
+(empno,ename,sal,job,deptno)
+VALUES
+(seq_emp_id.NEXTVAL,'JACK',3000,'CLERK',10)
+
+SELECT * FROM emp
+
+删除序列
+DROP SEQUENCE seq_emp_id
+
+
+索引
+索引是数据库对象之一，作用是加快查询效率
+索引的创建与使用是数据库自行完成的。
+经常出现在WHERE中的字段，或者去重，排序，关联条件的字段可以添加索引。
+
+CREATE INDEX idx_emp_ename ON emp(ename);
+
+
+
+唯一性约束
+唯一性约束要求该字段在整张表中每条记录的值都不允许重复，NULL除外。
+
+CREATE TABLE employees1 (
+   eid NUMBER(6) UNIQUE,
+   name VARCHAR2(30),
+   email VARCHAR2(50),
+   salary NUMBER(7, 2),
+   hiredate DATE,
+   CONSTRAINT employees_email_uk UNIQUE(email)
+ );
+INSERT INTO employees1
+(eid,name,email)
+VALUES
+(NULL,'jack',NULL)
+
+SELECT * FROM employees1
+
+
+
+主键约束
+主键约束要求字段非空且唯一，且一张表只能有一个主键约束
+CREATE TABLE employees2 (
+  eid NUMBER(6) PRIMARY KEY,
+  name VARCHAR2(30),
+  email VARCHAR2(50),
+  salary NUMBER(7, 2),
+  hiredate DATE
+);
+
+INSERT INTO employees2
+(eid,name)
+VALUES
+(NULL,'jack')
+
+

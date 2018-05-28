@@ -1,0 +1,170 @@
+SQL语句
+SQL是结构化查询语句，操作数据库需要向数据库
+发送SQL语句，数据库会理解SQL语句的含义并执
+行。
+
+SQL语句分为：
+DDL(数据定义语言):用来操作数据库对象
+数据库对象:表，视图，索引，序列
+
+DML(数据操作语言):用来操作表中数据
+TCL(事务控制语言):维护数据操作一致性
+TCL维护DML操作。
+
+DQL(数据查询语言):查询表中数据
+DCL(数据控制语言):用来管理数据库
+
+
+SQL语句不区分大小写，但应当养成一个
+好习惯，通常将关键字与非关键字用大小写
+区分开。
+
+SELECT SYSDATE FROM dual
+
+
+DDL语句:数据定义语言
+用于增删改数据库对象
+
+创建表:
+CREATE TABLE employee(
+  id NUMBER(4),
+	name VARCHAR2(20),
+	gender CHAR(1),
+	birth DATE,
+  salary NUMBER(6,2),
+  job VARCHAR2(30),
+  deptno NUMBER(2)
+)
+
+查看表结构
+DESC employee
+
+字段的默认值
+数据库中所有字段无论是什么类型，默认值都
+是NULL,可以使用DEFAULT为字段单独指定
+默认值。
+虽然SQL语句不区分大小写，但是字符串的值是
+区分大小写的。
+CREATE TABLE employee(
+  id NUMBER(4),
+	name VARCHAR2(20),
+	gender CHAR(1) DEFAULT 'M',
+	birth DATE,
+  salary NUMBER(6,2),
+  job VARCHAR2(30),
+  deptno NUMBER(2)
+)
+
+删除表
+DROP TABLE employee
+
+NOT NULL约束
+当一个字段被设置NOT NULL约束后，该字段的值不允许为空
+CREATE TABLE employee(
+  id NUMBER(4),
+  name VARCHAR2(20) NOT NULL,
+  gender CHAR(1) DEFAULT 'M',
+  birth DATE,
+  salary NUMBER(6,2),
+  job VARCHAR2(30),
+  deptno NUMBER(2)
+)
+
+修改表
+1:修改表名
+2:修改表结构
+
+修改表名:
+RENAME old_name TO new_name
+例如:将employee改名为myemp
+RENAME employee TO myemp
+
+
+2:修改表结构
+2.1 添加新的字段
+需要注意，添加的字段只能被追加到表的最后一列中，不能
+在现有字段中间插入一个字段。
+
+为myemp表添加字段hiredate:
+ALTER TABLE myemp
+ADD(
+   hiredate DATE
+)
+
+2.2:删除字段
+ALTER TABLE myemp
+DROP(
+    hiredate
+)
+
+2.3:修改现有字段
+可以修改字段的类型，长度，添加约束或设定默认值。
+若表中已经存在数据，则不要修改字段的类型，长度尽可能只
+增不减，否则可能会修改失败。
+
+ALTER TABLE myemp MODIFY( job VARCHAR2(40))
+DESC myemp
+
+
+DML语句:数据操作语言
+用来增，删，改表中的数据。DML总是伴随事务(TCL)的。
+
+1:INSERT语句
+用于向表中插入新的记录
+
+INSERT INTO myemp
+(id,name,salary,job)
+VALUES
+(1,'jack',3000,'CLERK')
+
+COMMIT
+SELECT * FROM myemp
+
+插入数据时，可以不指定字段名，若不指定，则是全列插入
+INSERT INTO myemp
+VALUES
+(2,'rose','F',SYSDATE,3000,'CLERK',10)
+
+插入日期类型数据时，建议使用函数TO_DATE
+该函数可以将一个字符串按照指定的日期格式转换为Date类型
+INSERT INTO myemp
+(id,name,salary,job,birth)
+VALUES
+(3,'mike',4000,'MANAGER',
+ TO_DATE('1992-08-02','YYYY-MM-DD')
+)
+
+无法将NULL值插入到非空约束的字段name上。
+INSERT INTO myemp
+(id,salary,job)
+VALUES
+(4,5000,'CLERK')
+
+SELECT * FROM myemp
+
+2:UPDATE语句，修改表中数据
+需要注意，修改语句通常要添加WHERE子句，这样可以限定
+要求改的记录。若不添加WHERE，则是全表所有记录都进行
+修改，添加了则只会将满足WHER条件的记录进行修改。
+
+UPDATE myemp
+SET salary=5000,deptno=20
+WHERE gender='M'
+
+
+3:DELETE语句，删除表中数据
+需要注意，删除语句通常要添加WHERE子句，这样可以限定
+要求删除的记录。若不添加WHERE，则是清空表操作，添加了
+则只会将满足WHER条件的记录进行删除。
+
+DELETE FROM myemp
+WHERE gender='M'
+
+
+作业:
+1:完成emp,dept表的创建
+2:向两张表中添加数据
+3:将员工SCOTT的部门号修改为50
+
+
+

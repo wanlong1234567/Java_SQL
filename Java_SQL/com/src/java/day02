@@ -1,0 +1,175 @@
+SELECT
+ TO_DATE('2008-08-08 20:08:08',
+         'YYYY-MM-DD HH24:MI:SS')
+FROM
+ dual
+
+DATE类型数据可以计算:
+两个DATE类型之间相减，差为相差的天数。
+对一个DATE加减一个数字，等于加减了天数。
+日期之间可以比较大小，越晚的越大。
+
+查看明天?
+SELECT SYSDATE+1 FROM dual
+
+查看每个员工入职到今天一共多少天?
+SELECT ename,SYSDATE-hiredate
+FROM emp
+
+SELECT SYSDATE-TO_DATE('1992-08-08','YYYY-MM-DD')
+FROM dual
+
+在日期格式字符串中出字母和符号外的其他字符都需要使用
+双引号括起来。
+SELECT
+ TO_DATE('2008年08月08日',
+         'YYYY"年"MM"月"DD"日"')
+FROM
+ dual
+
+2:TO_CHAR()
+可以将日期转换为字符串。TO_CHAR函数实际上可以
+将其他类型转换字符串，常用的是将日期转换为字符串
+
+SELECT TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')
+FROM dual
+
+日期格式中的YY,RR的区别
+RR,YY都是用2位数字表示年。
+他们在使用TO_DATE函数将一个字符串中2位
+数字的年解释为实际的年时对世纪的处理方式
+不同。
+YY是根据当前系统所在世纪来解释世纪的。
+RR则根据具体情况判定。
+
+SELECT
+ TO_CHAR(
+  TO_DATE('50-05-02','RR-MM-DD'),
+  'YYYY-MM-DD'
+ )
+FROM dual
+
+日期常用函数:
+1:LAST_DAY(date)
+返回给定日期所在月的月底日期
+
+SELECT LAST_DAY(SYSDATE) FROM dual
+
+
+2:ADD_MONTHS(date,i)
+对给定日期加指定的月，若i为负数
+则是减去指定的月
+
+查看每个员工入职20周年的纪念日?
+SELECT ename,ADD_MONTHS(hiredate,12*20)
+FROM emp
+
+
+3:MONTHS_BETWEEN(date1,date2)
+计算两个日期之间所相差的月份
+
+查看每个员工入职至今共多少月了?
+SELECT MONTHS_BETWEEN(SYSDATE,hiredate)
+FROM emp
+
+
+4:NEXT_DAY(date,i)
+返回给定日期第二天开始一周之内的指定周几的日期
+SELECT NEXT_DAY(SYSDATE,1)
+FROM dual
+
+
+
+5:LEAST、GREATEST
+求最小值与最大值，在日期中使用则是求
+最早的日期与最晚的日期
+
+SELECT
+ GREATEST(SYSDATE,TO_DATE('2008-08-08','YYYY-MM-DD'))
+FROM
+ dual
+
+
+
+6:EXTRACT
+提取指定日期对应时间分量的值
+SELECT EXTRACT(YEAR FROM SYSDATE)
+FROM dual;
+
+查看1982年入职的员工?
+SELECT ename,hiredate
+FROM emp
+WHERE EXTRACT(YEAR FROM hiredate)=1982
+
+
+
+
+CREATE TABLE student
+    (id NUMBER(4), name CHAR(20), gender CHAR(1));
+
+INSERT INTO student VALUES(1000, '李莫愁', 'F');
+
+INSERT INTO student VALUES(1001, '林平之', NULL);
+
+INSERT INTO student(id, name) VALUES(1002, '张无忌');
+
+
+SELECT * FROM student
+
+更新为NULL值
+UPDATE student
+SET gender=NULL
+WHERE id=1000
+
+过滤条件判断NULL值:
+判断NULL要使用IS NULL 或 IS NOT NULL
+DELETE FROM student
+WHERE gender IS NULL
+
+
+NULL的运算:
+NULL与字符串连接等于什么也没做。
+NULL与数字计算，结果还是NULL。
+SELECT ename||NULL
+FROM emp
+查看每个员工的收入(工资+绩效)
+SELECT ename,sal,comm,sal+comm
+FROM emp
+
+空值函数
+NVL(a1,a2)
+当a1为NULL时，函数返回a2的值
+若a1不为NULL，函数返回a1自身
+所以NVL函数的意义是将NULL值替换为非NULL值
+
+SELECT
+ ename,sal,comm,sal+NVL(comm,0)
+FROM
+ emp
+
+查看每个员工的绩效情况，即：
+有绩效的则显示"有绩效"，绩效为NULL的
+则显示为"没有绩效"
+NVL2(a1,a2,a3)
+当a1不为NULL时，函数返回a2
+当a1为NULL时，函数返回a3
+
+SELECT
+ ename,comm,
+ NVL2(comm,'有绩效','没有绩效')
+FROM
+ emp
+
+SELECT
+ ename,sal,comm,
+ NVL2(comm,sal+comm,sal)
+FROM
+ emp
+
+
+
+
+
+
+
+
